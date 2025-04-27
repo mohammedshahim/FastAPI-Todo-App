@@ -1,15 +1,14 @@
 from typing import Annotated
-
 from passlib.context import CryptContext
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-
-from fastapi import Depends, HTTPException, Path, APIRouter
-
+from fastapi import Depends, HTTPException, Path, APIRouter, Request
 from ..models import Users
 from ..database import SessionLocal
 from starlette import status
 from .auth import get_current_user
+from .todos import redirect_to_login
+from fastapi.templating import Jinja2Templates
 
 SECRET_KEY = 'randomtext'
 ALGORITHM = 'HS256'
@@ -29,11 +28,21 @@ def get_db():
 db_dependency = Annotated[Session, Depends(get_db)]
 user_dependency = Annotated[dict, Depends(get_current_user)]
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+templates = Jinja2Templates(directory="TodoApp/templates")
 
 class UserVerification(BaseModel):
     password: str
     new_password: str = Field(min_length=6)
 
+# Pages
+@router.get("/change-password-page")
+async def render_change_password_page(request: Request):
+    user = await get_current_user(request.cookies.get('access_token'))
+    if user is None:
+        return redirect_to_login()
+    return templates.TemplateResponse("change-password.html", {"request": request, 'user': user})
+
+# Endpoints
 @router.get('/', status_code=status.HTTP_200_OK)
 async def get_user(user: user_dependency, db: db_dependency):
     if user is None:

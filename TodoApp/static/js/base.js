@@ -213,8 +213,55 @@
         });
     }
 
+    // Password reset JS
+    const passwordForm = document.getElementById('passwordForm');
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', async function (event) {
 
+            event.preventDefault();
 
+            const form = event.target;
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            if (data.new_password !== data.new_password2) {
+                alert("Passwords do not match");
+                return;
+            }
+
+            const payload = {
+                password: data.password,
+                new_password: data.new_password,
+            };
+
+            try {
+                const token = getCookie('access_token');
+                if (!token) {
+                    throw new Error('Authentication token not found');
+                }
+
+                const response = await fetch('/user/password', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    window.location.href = '/todos/todo-page'; // Change this to your desired redirect page
+                } else {
+                    // Handle error
+                    const errorData = await response.json();
+                    alert(`Error: ${errorData.detail}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+    }
 
 
     // Helper function to get a cookie by name
